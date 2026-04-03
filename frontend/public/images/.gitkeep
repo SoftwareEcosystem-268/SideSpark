@@ -1,0 +1,5 @@
+# Folder for frontend images
+# Place PNG files here and access them in your code as:
+# <Image src="/images/your-image.png" alt="Description" width={500} height={300} />
+# or
+# <img src="/images/your-image.png" alt="Description" />

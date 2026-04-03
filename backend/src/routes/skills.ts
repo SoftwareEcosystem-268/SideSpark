@@ -1,0 +1,144 @@
+import express, { Request, Response } from 'express'
+import { prisma } from '../lib/prisma'
+import { authMiddleware, optionalAuthMiddleware } from '../middleware/auth'
+
+const router = express.Router()
+
+// GET /api/skills - Get all skills (public endpoint)
+router.get('/', optionalAuthMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { category } = req.query
+
+    const whereClause: any = {}
+    if (category) {
+      whereClause.category = category
+    }
+
+    const skills = await prisma.skill.findMany({
+      where: whereClause,
+      orderBy: { name: 'asc' }
+    })
+
+    // If user is authenticated, include their skills
+    let userSkills: any[] = []
+    if (req.user) {
+      const userSkillRecords = await prisma.userSkill.findMany({
+        where: { userId: req.user.userId },
+        include: { skill: true }
+      })
+
+      userSkills = userSkillRecords.map(us => ({
+        ...us.skill,
+        userSkillId: us.id,
+        addedAt: us.createdAt
+      }))
+    }
+
+    res.json({
+      skills,
+      userSkills
+    })
+  } catch (error) {
+    console.error('Get skills error:', error)
+    res.status(500).json({ error: 'Failed to fetch skills' })
+  }
+})
+
+// GET /api/skills/:id - Get skill by ID
+router.get('/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+
+    const skill = await prisma.skill.findUnique({
+      where: { id }
+    })
+
+    if (!skill) {
+      return res.status(404).json({ error: 'Skill not found' })
+    }
+
+    res.json(skill)
+  } catch (error) {
+    console.error('Get skill error:', error)
+    res.status(500).json({ error: 'Failed to fetch skill' })
+  }
+})
+
+// POST /api/skills/:id/add - Add skill to user's profile
+router.post('/:id/add', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+    const { userId } = req.user!
+
+    // Verify skill exists
+    const skill = await prisma.skill.findUnique({
+      where: { id }
+    })
+
+    if (!skill) {
+      return res.status(404).json({ error: 'Skill not found' })
+    }
+
+    // Check if already added
+    const existing = await prisma.userSkill.findUnique({
+      where: {
+        userId_skillId: {
+          userId,
+          skillId: id
+        }
+      }
+    })
+
+    if (existing) {
+      return res.status(400).json({ error: 'Skill already added' })
+    }
+
+    const userSkill = await prisma.userSkill.create({
+      data: {
+        userId,
+        skillId: id
+      },
+      include: {
+        skill: true
+      }
+    })
+
+    res.status(201).json(userSkill)
+  } catch (error) {
+    console.error('Add skill error:', error)
+    res.status(500).json({ error: 'Failed to add skill' })
+  }
+})
+
+// DELETE /api/skills/:id/remove - Remove skill from user's profile
+router.delete('/:id/remove', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+    const { userId } = req.user!
+
+    // Verify user has this skill
+    const existing = await prisma.userSkill.findUnique({
+      where: {
+        userId_skillId: {
+          userId,
+          skillId: id
+        }
+      }
+    })
+
+    if (!existing) {
+      return res.status(404).json({ error: 'Skill not found in your profile' })
+    }
+
+    await prisma.userSkill.delete({
+      where: { id: existing.id }
+    })
+
+    res.status(204).send()
+  } catch (error) {
+    console.error('Remove skill error:', error)
+    res.status(500).json({ error: 'Failed to remove skill' })
+  }
+})
+
+export default router
