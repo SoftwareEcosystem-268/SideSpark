@@ -51,7 +51,7 @@ export default function LoginPage() {
           setErrors({ general: result.error })
         }
       } else if (result?.ok) {
-        router.push('/dashboard')
+        window.location.href = '/';
       }
     } catch (error) {
       setErrors({ general: 'เกิดข้อผิดพลาด กรุณาลองใหม่' })

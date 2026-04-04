@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,9 +9,15 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
 import { Loader2, Mail, Lock, User, AlertCircle } from 'lucide-react'
 import { api } from '@/lib/api'
+import { signIn } from 'next-auth/react' 
 
 export default function RegisterPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  
+  // ดึงค่า redirect จาก URL (ถ้าไม่มีให้กลับไปที่หน้าแรก '/')
+  const redirectUrl = searchParams.get('redirect') || '/'
+
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -24,7 +30,6 @@ export default function RegisterPage() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
-    // Clear error for this field
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }))
     }
@@ -36,6 +41,7 @@ export default function RegisterPage() {
     setLoading(true)
 
     try {
+      // 1. เรียก API สมัครสมาชิก
       const response = await api.register(formData)
       const data = await response.json()
 
@@ -44,8 +50,20 @@ export default function RegisterPage() {
         return
       }
 
-      // Registration successful — go to login
-      router.push('/login?registered=1')
+      // 2. เมื่อสมัครสำเร็จ ทำการ Auto-login ด้วย NextAuth
+      const result = await signIn('credentials', {
+        email: formData.email,
+        password: formData.password,
+        redirect: false,
+      })
+
+      if (result?.error) {
+        // หาก Auto-login พลาด (เช่น เซิร์ฟเวอร์โหลดไม่ทัน) ให้ส่งไปหน้า Login ปกติ พร้อมส่ง redirect ต่อไปด้วย
+        router.push(`/login?registered=1&redirect=${encodeURIComponent(redirectUrl)}`)
+      } else if (result?.ok) {
+        // Login อัตโนมัติสำเร็จ ให้ Redirect ไปหน้าชำระเงิน (หรือหน้าแรกถ้าไม่มี redirect)
+        window.location.href = redirectUrl
+      }
     } catch (error) {
       setErrors({ general: 'เกิดข้อผิดพลาด กรุณาลองใหม่' })
     } finally {
@@ -162,7 +180,7 @@ export default function RegisterPage() {
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  กำลังสมัครสมาชิก...
+                  กำลังดำเนินการ...
                 </>
               ) : (
                 'สมัครสมาชิก'
@@ -172,7 +190,11 @@ export default function RegisterPage() {
 
           <p className="text-center text-sm text-gray-600 dark:text-gray-400 mt-6">
             มีบัญชีแล้ว?{' '}
-            <Link href="/login" className="text-[#8A2BE2] hover:underline font-medium">
+            {/* ส่งค่า redirect กลับไปที่หน้า Login ด้วย เผื่อผู้ใช้เปลี่ยนใจไปกดเข้าสู่ระบบแทน */}
+            <Link 
+              href={`/login${redirectUrl !== '/' ? `?redirect=${encodeURIComponent(redirectUrl)}` : ''}`} 
+              className="text-[#8A2BE2] hover:underline font-medium"
+            >
               เข้าสู่ระบบ
             </Link>
           </p>
