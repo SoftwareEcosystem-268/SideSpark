@@ -10,12 +10,12 @@ export default function Navbar() {
             src="/images/logo.jpg"
             alt="SideSpark Logo"
             width="120"
-            className="rounded mix-blend-multiply border-t-[5px] border-white dark:border-transparentdark:mix-blend-normal"
+            className="rounded mix-blend-multiply border-t-[5px] border-white dark:border-transparent dark:mix-blend-normal"
           />
         </div>
         <div className="flex gap-3">
           <Link href="/login">
-            <Button variant="ghost" className="hidden sm:inline-flex hover:text-[#8A2BE2] font-mediumtransition-colors">
+            <Button variant="ghost" className="hover:text-[#8A2BE2] font-medium transition-colors">
               เข้าสู่ระบบ
             </Button>
           </Link>
