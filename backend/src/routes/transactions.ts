@@ -308,7 +308,7 @@ router.get('/summary/stats', async (req: Request, res: Response) => {
         SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income,
         SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expense
       FROM transactions
-      WHERE "userId" = ${userId}
+      WHERE user_id = ${userId}
         AND date >= ${sixMonthsAgo}
       GROUP BY TO_CHAR(date, 'YYYY-MM')
       ORDER BY month ASC
