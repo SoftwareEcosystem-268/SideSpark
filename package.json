@@ -7,6 +7,12 @@
     "build": "pnpm --filter frontend build && pnpm --filter backend build",
     "start": "concurrently \"pnpm --filter frontend start\" \"pnpm --filter backend start\"",
     "lint": "pnpm --filter frontend lint && pnpm --filter backend lint",
+    "test": "pnpm test:frontend && pnpm test:backend",
+    "test:frontend": "vitest --config frontend/vitest.config.ts --run",
+    "test:backend": "pnpm --filter backend run test:run",
+    "test:coverage": "pnpm test:coverage:frontend && pnpm test:coverage:backend",
+    "test:coverage:frontend": "pnpm --filter frontend run test:coverage",
+    "test:coverage:backend": "pnpm --filter backend run test:coverage",
     "prisma:generate": "pnpm --filter backend run prisma:generate",
     "prisma:migrate": "pnpm --filter backend run prisma:migrate",
     "prisma:studio": "pnpm --filter backend run prisma:studio"

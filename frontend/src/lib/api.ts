@@ -1,4 +1,4 @@
-import { getSession } from 'next-auth/react'
+import { getAuthSession } from '@/lib/auth-session'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
 
@@ -13,7 +13,7 @@ export async function apiRequest(
 
   // Get token directly from NextAuth session
   let token: string | null = null
-  const session = await getSession()
+  const session = await getAuthSession()
   token = (session as any)?.accessToken || null
 
   const headers: Record<string, string> = {
