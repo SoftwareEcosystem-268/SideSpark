@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -11,12 +11,16 @@ import { Loader2, Mail, Lock, User, AlertCircle } from 'lucide-react'
 import { api } from '@/lib/api'
 import { signIn } from 'next-auth/react' 
 
-export default function RegisterPage() {
-  const router = useRouter()
+function RegisterPageContent() {
   const searchParams = useSearchParams()
+
+  return <RegisterPageView redirectUrl={searchParams.get('redirect') || '/'} />
+}
+
+function RegisterPageView({ redirectUrl }: { redirectUrl: string }) {
+  const router = useRouter()
   
   // ดึงค่า redirect จาก URL (ถ้าไม่มีให้กลับไปที่หน้าแรก '/')
-  const redirectUrl = searchParams.get('redirect') || '/'
 
   const [formData, setFormData] = useState({
     username: '',
@@ -201,5 +205,13 @@ export default function RegisterPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<RegisterPageView redirectUrl="/" />}>
+      <RegisterPageContent />
+    </Suspense>
   )
 }

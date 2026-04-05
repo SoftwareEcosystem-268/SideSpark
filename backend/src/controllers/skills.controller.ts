@@ -1,6 +1,6 @@
 // src/controllers/skills.controller.ts
 import { Request, Response } from "express";
-import prisma from "../lib/prisma";
+import { prisma } from "../lib/prisma";
 
 export const getSkills = async (req: Request, res: Response) => {
   try {

@@ -3,6 +3,7 @@ import { prisma } from '../lib/prisma'
 import { authMiddleware, optionalAuthMiddleware } from '../middleware/auth'
 
 const router = express.Router()
+type SkillParams = { id: string }
 
 // GET /api/skills - Get all skills (public endpoint)
 router.get('/', optionalAuthMiddleware, async (req: Request, res: Response) => {
@@ -45,7 +46,7 @@ router.get('/', optionalAuthMiddleware, async (req: Request, res: Response) => {
 })
 
 // GET /api/skills/:id - Get skill by ID
-router.get('/:id', async (req: Request, res: Response) => {
+router.get('/:id', async (req: Request<SkillParams>, res: Response) => {
   try {
     const { id } = req.params
 
@@ -65,7 +66,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 })
 
 // POST /api/skills/:id/add - Add skill to user's profile
-router.post('/:id/add', authMiddleware, async (req: Request, res: Response) => {
+router.post('/:id/add', authMiddleware, async (req: Request<SkillParams>, res: Response) => {
   try {
     const { id } = req.params
     const { userId } = req.user!
@@ -111,7 +112,7 @@ router.post('/:id/add', authMiddleware, async (req: Request, res: Response) => {
 })
 
 // DELETE /api/skills/:id/remove - Remove skill from user's profile
-router.delete('/:id/remove', authMiddleware, async (req: Request, res: Response) => {
+router.delete('/:id/remove', authMiddleware, async (req: Request<SkillParams>, res: Response) => {
   try {
     const { id } = req.params
     const { userId } = req.user!

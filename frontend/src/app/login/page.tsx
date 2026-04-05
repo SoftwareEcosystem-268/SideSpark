@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -10,19 +10,20 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Loader2, Mail, Lock, AlertCircle } from 'lucide-react'
 import { signIn } from 'next-auth/react'
 
-export default function LoginPage() {
-  const router = useRouter()
+function LoginPageContent() {
   const searchParams = useSearchParams()
+
+  return <LoginPageView registered={searchParams.get('registered')} />
+}
+
+function LoginPageView({ registered }: { registered: string | null }) {
+  const router = useRouter()
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
-
-  // Check for flags in URL
-  const urlError = searchParams.get('error')
-  const registered = searchParams.get('registered')
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -165,5 +166,13 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginPageView registered={null} />}>
+      <LoginPageContent />
+    </Suspense>
   )
 }
