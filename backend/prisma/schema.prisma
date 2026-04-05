@@ -19,19 +19,19 @@ model User {
   transactions  Transaction[]
   milestones    Milestone[]
   refreshTokens RefreshToken[]
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
 
   @@map("users")
 }
 
 // Skill model
 model Skill {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  nameEn      String?
-  category    String?  // creative, tech, business, education, language
-  userSkills  UserSkill[]
+  id         String      @id @default(cuid())
+  name       String      @unique
+  nameEn     String?     @map("name_en")
+  category   String?     // creative, tech, business, education, language
+  userSkills UserSkill[]
 
   @@map("skills")
 }
@@ -39,11 +39,11 @@ model Skill {
 // UserSkill junction table (Many-to-Many)
 model UserSkill {
   id        String   @id @default(cuid())
-  userId    String
-  skillId   String
+  userId    String   @map("user_id")
+  skillId   String   @map("skill_id")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   skill     Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @map("created_at")
 
   @@unique([userId, skillId])
   @@map("user_skills")
@@ -51,16 +51,16 @@ model UserSkill {
 
 // Side Hustle Ideas (predefined suggestions)
 model Idea {
-  id                String   @id @default(cuid())
-  title             String
-  description       String
-  skills            String[] // Array of skill names
-  difficulty        String   // easy, medium, hard
-  estimatedIncomeMin Int
-  estimatedIncomeMax Int
-  incomeUnit         String   @default("THB")
-  timeToStart        String
-  requiredTools      String[]
+  id                 String   @id @default(cuid())
+  title              String
+  description        String
+  skills             String[] // Array of skill names
+  difficulty         String   // easy, medium, hard
+  estimatedIncomeMin Int      @map("estimated_income_min")
+  estimatedIncomeMax Int      @map("estimated_income_max")
+  incomeUnit         String   @default("THB") @map("income_unit")
+  timeToStart        String   @map("time_to_start")
+  requiredTools      String[] @map("required_tools")
   resources          String[] // URLs
   steps              String[] // Array of steps to start
 
@@ -69,16 +69,16 @@ model Idea {
 
 // Project model
 model Project {
-  id           String   @id @default(cuid())
-  userId       String
+  id           String        @id @default(cuid())
+  userId       String        @map("user_id")
   name         String
   description  String?
-  initialCost  Int      @default(0)
-  monthlyGoal  Int      @default(0)
-  status       String   @default("active") // active, paused, completed
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  initialCost  Int           @default(0) @map("initial_cost")
+  monthlyGoal  Int           @default(0) @map("monthly_goal")
+  status       String        @default("active") // active, paused, completed
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   tasks        Task[]
   transactions Transaction[]
 
@@ -87,14 +87,14 @@ model Project {
 
 // Task/ToDo model for project planning
 model Task {
-  id          String   @id @default(cuid())
-  projectId   String
-  text        String
-  completed   Boolean  @default(false)
-  order       Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  projectId String   @map("project_id")
+  text      String
+  completed Boolean  @default(false)
+  order     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@map("tasks")
 }
@@ -102,13 +102,13 @@ model Task {
 // Transaction model (income/expense tracking)
 model Transaction {
   id          String   @id @default(cuid())
-  userId      String
-  projectId   String?
+  userId      String   @map("user_id")
+  projectId   String?  @map("project_id")
   type        String   // income, expense
   amount      Int
   description String?
   date        DateTime @default(now())
-  createdAt   DateTime @default(now())
+  createdAt   DateTime @default(now()) @map("created_at")
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   project     Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
 
@@ -117,15 +117,15 @@ model Transaction {
 
 // Milestone model
 model Milestone {
-  id          String   @id @default(cuid())
-  userId      String
+  id          String    @id @default(cuid())
+  userId      String    @map("user_id")
   title       String
   description String?
-  target      String   // e.g., "earn 50000", "complete 10 projects"
-  achieved    Boolean  @default(false)
-  achievedAt  DateTime?
-  createdAt   DateTime @default(now())
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  target      String    // e.g., "earn 50000", "complete 10 projects"
+  achieved    Boolean   @default(false)
+  achievedAt  DateTime? @map("achieved_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("milestones")
 }
@@ -134,10 +134,10 @@ model Milestone {
 model RefreshToken {
   id        String   @id @default(cuid())
   token     String   @unique
-  userId    String
-  expiresAt DateTime
+  userId    String   @map("user_id")
+  expiresAt DateTime @map("expires_at")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @map("created_at")
 
   @@map("refresh_tokens")
 }
