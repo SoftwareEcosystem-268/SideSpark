@@ -1,11 +1,11 @@
-// app/main/page.tsx
+// app/main/projects/page.tsx
 import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
 import UserNavbar from "@/components/layout/UserNavbar"
 import Footer from "@/components/layout/Footer"
-import ExploreIdeas from "@/components/main/ExploreIdeas"
+import ProjectsPage from "@/components/main/ProjectsPage"
 
-export default async function MainPage() {
+export default async function ProjectsRoute() {
   const session = await getServerSession()
   if (!session) redirect("/login")
 
@@ -14,7 +14,7 @@ export default async function MainPage() {
       <UserNavbar user={session.user} />
 
       <main className="flex-1 container mx-auto px-4 py-8 relative z-10">
-        <ExploreIdeas />
+        <ProjectsPage />
       </main>
     </div>
   )
