@@ -13,8 +13,8 @@ import { signIn } from 'next-auth/react'
 
 function RegisterPageContent() {
   const searchParams = useSearchParams()
-
-  return <RegisterPageView redirectUrl={searchParams.get('redirect') || '/'} />
+  const targetUrl = searchParams.get('callbackUrl') || searchParams.get('redirect') || '/main'
+  return <RegisterPageView redirectUrl={targetUrl} />
 }
 
 function RegisterPageView({ redirectUrl }: { redirectUrl: string }) {
@@ -62,10 +62,10 @@ function RegisterPageView({ redirectUrl }: { redirectUrl: string }) {
       })
 
       if (result?.error) {
-        // หาก Auto-login พลาด (เช่น เซิร์ฟเวอร์โหลดไม่ทัน) ให้ส่งไปหน้า Login ปกติ พร้อมส่ง redirect ต่อไปด้วย
-        router.push(`/login?registered=1&redirect=${encodeURIComponent(redirectUrl)}`)
+        // ส่ง callbackUrl ต่อไปให้หน้า Login
+        router.push(`/login?registered=1&callbackUrl=${encodeURIComponent(redirectUrl)}`)
       } else if (result?.ok) {
-        // Login อัตโนมัติสำเร็จ ให้ Redirect ไปหน้าชำระเงิน (หรือหน้าแรกถ้าไม่มี redirect)
+        // ถ้า auto-login สำเร็จ ให้พุ่งไป URL ที่ตั้งใจไว้เลย!
         window.location.href = redirectUrl
       }
     } catch (error) {

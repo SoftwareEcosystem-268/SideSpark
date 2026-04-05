@@ -12,11 +12,14 @@ import { signIn } from 'next-auth/react'
 
 function LoginPageContent() {
   const searchParams = useSearchParams()
+  const registered = searchParams.get('registered')
+  // รับค่า callbackUrl หรือ redirect ถ้าไม่มีให้กลับไปหน้าแรก '/'
+  const redirectUrl = searchParams.get('callbackUrl') || searchParams.get('redirect') || '/'
 
-  return <LoginPageView registered={searchParams.get('registered')} />
+  return <LoginPageView registered={registered} redirectUrl={redirectUrl} />
 }
 
-function LoginPageView({ registered }: { registered: string | null }) {
+function LoginPageView({ registered, redirectUrl }: { registered: string | null, redirectUrl: string }) {
   const router = useRouter()
   const [formData, setFormData] = useState({
     email: '',
@@ -52,7 +55,8 @@ function LoginPageView({ registered }: { registered: string | null }) {
           setErrors({ general: result.error })
         }
       } else if (result?.ok) {
-        window.location.href = '/';
+        // เมื่อสำเร็จ ให้ไปที่ URL ที่ตั้งใจไว้แต่แรก
+        window.location.href = redirectUrl;
       }
     } catch (error) {
       setErrors({ general: 'เกิดข้อผิดพลาด กรุณาลองใหม่' })
@@ -159,7 +163,11 @@ function LoginPageView({ registered }: { registered: string | null }) {
 
           <p className="text-center text-sm text-gray-600 dark:text-gray-400 mt-6">
             ยังไม่มีบัญชี?{' '}
-            <Link href="/register" className="text-[#8A2BE2] hover:underline font-medium">
+            {/* ส่ง callbackUrl ต่อไปให้หน้าสมัครสมาชิก เผื่อเขาเปลี่ยนใจไปสมัครแทน */}
+            <Link 
+              href={`/register${redirectUrl !== '/' ? `?callbackUrl=${encodeURIComponent(redirectUrl)}` : ''}`} 
+              className="text-[#8A2BE2] hover:underline font-medium"
+            >
               สมัครสมาชิก
             </Link>
           </p>
@@ -171,7 +179,7 @@ function LoginPageView({ registered }: { registered: string | null }) {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<LoginPageView registered={null} />}>
+    <Suspense fallback={<LoginPageView registered={null} redirectUrl="/" />}>
       <LoginPageContent />
     </Suspense>
   )

@@ -1,0 +1,21 @@
+// app/upgrade/family/page.tsx
+import { getServerSession } from "next-auth"
+import { redirect } from "next/navigation"
+import UserNavbar from "@/components/layout/UserNavbar"
+import Footer from "@/components/layout/Footer"
+import CheckoutPage from "@/components/upgrade/CheckoutPage"
+
+export default async function UpgradeFamilyRoute() {
+  const session = await getServerSession()
+  if (!session) redirect("/login")
+
+  return (
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#1E293B] flex flex-col">
+      <UserNavbar user={session.user} />
+      <main className="flex-1 container mx-auto px-4 py-8">
+        <CheckoutPage planId="family" />
+      </main>
+      <Footer />
+    </div>
+  )
+}
