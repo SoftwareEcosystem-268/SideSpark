@@ -1,7 +1,8 @@
 // components/main/ProjectDetail.tsx
 "use client"
 
-import { useState, useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
+import { createPortal } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -20,6 +21,9 @@ interface Props {
   onUpdate: (updated: Project) => void
 }
 
+const DRAWER_INSET = 16
+const NAVBAR_FALLBACK_HEIGHT = 64
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function uid(): string {
   return Math.random().toString(36).slice(2, 9)
@@ -35,10 +39,6 @@ function calcIncome(project: Project): number {
 
 function calcExpense(project: Project): number {
   return project.initialCost + project.transactions.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0)
-}
-
-function calcNet(project: Project): number {
-  return calcIncome(project) - calcExpense(project)
 }
 
 // Group transactions by ISO week (YYYY-Www)
@@ -106,6 +106,8 @@ function Section({ children, className = "" }: { children: React.ReactNode; clas
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function ProjectDetail({ project, onClose, onUpdate }: Props) {
+  const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null)
+  const [navbarBottom, setNavbarBottom] = useState(NAVBAR_FALLBACK_HEIGHT)
   const [activeTab, setActiveTab] = useState<Tab>("overview")
 
   // Edit project info
@@ -211,16 +213,56 @@ export default function ProjectDetail({ project, onClose, onUpdate }: Props) {
   ]
 
   // ─── Render ─────────────────────────────────────────────────────────────────
-  return (
+  useEffect(() => {
+    setPortalRoot(document.body)
+
+    const bodyStyle = document.body.style
+    const previousOverflow = bodyStyle.overflow
+    bodyStyle.overflow = "hidden"
+
+    const navbar = document.querySelector<HTMLElement>("[data-user-navbar]")
+    const syncNavbarBottom = () => {
+      const nextBottom = navbar?.getBoundingClientRect().bottom ?? NAVBAR_FALLBACK_HEIGHT
+      setNavbarBottom(Math.max(NAVBAR_FALLBACK_HEIGHT, Math.round(nextBottom)))
+    }
+
+    syncNavbarBottom()
+    window.addEventListener("resize", syncNavbarBottom)
+
+    const resizeObserver = typeof ResizeObserver !== "undefined" && navbar
+      ? new ResizeObserver(syncNavbarBottom)
+      : null
+
+    if (resizeObserver && navbar) {
+      resizeObserver.observe(navbar)
+    }
+
+    return () => {
+      bodyStyle.overflow = previousOverflow
+      window.removeEventListener("resize", syncNavbarBottom)
+      resizeObserver?.disconnect()
+    }
+  }, [])
+
+  const overlayTop = `${navbarBottom}px`
+  const drawerTop = `${navbarBottom + DRAWER_INSET}px`
+
+  if (!portalRoot) return null
+
+  return createPortal(
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/40 dark:bg-black/60 z-40 animate-in fade-in duration-200"
+        className="fixed inset-x-0 bottom-0 bg-black/40 dark:bg-black/60 z-[60] animate-in fade-in duration-200"
+        style={{ top: overlayTop }}
         onClick={onClose}
       />
 
       {/* Drawer */}
-      <div className="fixed z-50 flex flex-col bg-[#F8FAFC] dark:bg-[#1E293B] rounded-3xl shadow-2xl animate-in slide-in-from-bottom duration-300" style={{ top: "80px", left: "16px", right: "16px", bottom: "16px" }}>
+      <div
+        className="fixed left-4 right-4 bottom-4 z-[70] flex flex-col bg-[#F8FAFC] dark:bg-[#1E293B] rounded-3xl shadow-2xl animate-in slide-in-from-bottom duration-300"
+        style={{ top: drawerTop }}
+      >
 
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-1 shrink-0">
@@ -678,6 +720,7 @@ export default function ProjectDetail({ project, onClose, onUpdate }: Props) {
 
         </div>
       </div>
-    </>
+    </>,
+    portalRoot
   )
 }

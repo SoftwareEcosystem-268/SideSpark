@@ -5,9 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Lightbulb, Check, Plus, Loader2 } from "lucide-react"
 
+interface Recommendation {
+  id: string
+  title: string
+  difficulty: string
+  description: string
+  estimatedIncomeMin: number
+  estimatedIncomeMax: number
+}
+
 export default function MainDashboard() {
-  const [skills, setSkills] = useState([])
-  const [recommendations, setRecommendations] = useState([])
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -15,7 +23,7 @@ export default function MainDashboard() {
     const fetchData = async () => {
       try {
         const res = await fetch('http://localhost:5000/api/ideas', { cache: 'no-store' })
-        const data = await res.json()
+        const data: Recommendation[] = await res.json()
         setRecommendations(data)
       } catch (err) {
         console.error("Failed to fetch ideas", err)
@@ -64,7 +72,7 @@ export default function MainDashboard() {
           <div className="flex justify-center py-20"><Loader2 className="animate-spin text-[#8A2BE2]" /></div>
         ) : (
           <div className="grid md:grid-cols-2 gap-4">
-            {recommendations.map((idea: any) => (
+            {recommendations.map((idea) => (
               <Card key={idea.id} className="group hover:border-[#8A2BE2] transition-all cursor-pointer overflow-hidden">
                 <CardHeader className="pb-2">
                   <div className="flex justify-between items-start">

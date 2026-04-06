@@ -1,7 +1,7 @@
 'use client'
 
 import { Suspense, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,7 +20,6 @@ function LoginPageContent() {
 }
 
 function LoginPageView({ registered, redirectUrl }: { registered: string | null, redirectUrl: string }) {
-  const router = useRouter()
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -58,7 +57,7 @@ function LoginPageView({ registered, redirectUrl }: { registered: string | null,
         // เมื่อสำเร็จ ให้ไปที่ URL ที่ตั้งใจไว้แต่แรก
         window.location.href = redirectUrl;
       }
-    } catch (error) {
+    } catch {
       setErrors({ general: 'เกิดข้อผิดพลาด กรุณาลองใหม่' })
     } finally {
       setLoading(false)

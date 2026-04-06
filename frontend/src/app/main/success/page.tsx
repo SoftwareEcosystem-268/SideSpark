@@ -2,7 +2,6 @@
 import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
 import UserNavbar from "@/components/layout/UserNavbar"
-import Footer from "@/components/layout/Footer"
 import SuccessPage from "@/components/main/SuccessPage"
 
 export default async function SuccessRoute() {
