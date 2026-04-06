@@ -1,61 +1,54 @@
 # SideSpark
 
-SideSpark คือเว็บแอปสำหรับช่วยนักศึกษาไทยสำรวจไอเดีย side hustle, วางแผนโปรเจกต์, และติดตามรายรับรายจ่ายจากงานเสริมในที่เดียว
-
-Repository นี้เป็น `pnpm` workspace ที่แยก `frontend` และ `backend` ออกจากกันชัดเจน พร้อมชุดทดสอบในโฟลเดอร์ `tests/`
-
-## สถานะปัจจุบัน
-
-- Backend API สำหรับ auth, skills, ideas, projects, transactions และ users ใช้งานได้
-- Frontend flow สมัครสมาชิกและเข้าสู่ระบบเชื่อมกับ backend ผ่าน NextAuth แล้ว
-- หน้าในส่วน product เช่น `/main`, `/main/projects`, `/main/success` และ `/upgrade` ยังเน้นงาน UI prototype และ mock data เป็นหลัก
-- ชุดทดสอบใช้ Vitest และแยก frontend/backend ออกจากกันที่ระดับ workspace
+SideSpark คือเว็บแอปสำหรับช่วยผู้ใช้สำรวจไอเดีย side hustle, จัดการโปรเจกต์, และติดตามรายรับรายจ่าย โดยแยกโค้ดเป็น `frontend` และ `backend` ภายใน `pnpm` workspace เดียว
 
 ## Tech Stack
 
-- Frontend: Next.js 14, React 18, Tailwind CSS, shadcn/ui, NextAuth v4
+- Frontend: Next.js 14, React 18, Tailwind CSS, NextAuth v4
 - Backend: Express.js, TypeScript, Prisma ORM, PostgreSQL, JWT
-- Tooling: pnpm workspace, Vitest, concurrently
-- Deployment: Render (`render.yaml`)
+- Tooling: pnpm workspace, Vitest
+- Deployment:
+  - แนะนำ: `frontend` บน Vercel และ `backend + PostgreSQL` บน Render
+  - รองรับ: deploy ทั้งระบบบน Render ผ่าน [`render.yaml`](render.yaml)
 
-## โครงสร้างโปรเจกต์
+## Project Structure
 
 ```text
 SideSpark/
-|-- backend/               # Express API + Prisma schema + seed
-|-- frontend/              # Next.js App Router frontend
-|-- docs/                  # เอกสารแยกตาม frontend/backend
-|-- tests/                 # Vitest suites แยก frontend/backend
-|-- package.json           # Root workspace scripts
+|-- backend/               # Express API + Prisma schema + scripts
+|-- frontend/              # Next.js frontend
+|-- docs/                  # เอกสารแยกตามหัวข้อ
+|-- tests/                 # ชุดทดสอบ frontend/backend
+|-- package.json           # root workspace scripts
 |-- pnpm-workspace.yaml
-|-- render.yaml            # Base deployment config สำหรับ Render
-`-- vitest.config.ts       # Root Vitest projects config
+|-- render.yaml            # Render Blueprint
+`-- vitest.config.ts
 ```
 
-## เริ่มต้นใช้งาน
+## Local Development
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 18.18+ หรือใหม่กว่า
 - pnpm 8+
 - PostgreSQL
 
-### 1. ติดตั้ง dependencies
+### 1. Install dependencies
 
 ```bash
 pnpm install
 ```
 
-### 2. ตั้งค่า environment variables
+### 2. Set environment variables
 
-สร้างไฟล์ต่อไปนี้จาก example ที่มีอยู่ใน repo:
+สร้างไฟล์ต่อไปนี้จาก example:
 
 - `backend/.env` จาก `backend/.env.example`
 - `frontend/.env.local` จาก `frontend/.env.local.example`
 
-ค่าที่ควรตั้งอย่างน้อยมีดังนี้
+ค่าหลักที่ต้องมี:
 
-Backend:
+Backend
 
 - `DATABASE_URL`
 - `PORT`
@@ -63,19 +56,16 @@ Backend:
 - `FRONTEND_URL`
 - `JWT_SECRET`
 - `REFRESH_TOKEN_SECRET`
+- `JWT_EXPIRES_IN`
 - `REFRESH_TOKEN_EXPIRES_IN`
 
-Frontend:
+Frontend
 
 - `NEXTAUTH_URL`
 - `NEXTAUTH_SECRET`
 - `NEXT_PUBLIC_API_URL`
 
-หมายเหตุ:
-
-- `backend/.env.example` ยังมีตัวแปรเกี่ยวกับ email และ `JWT_EXPIRES_IN` อยู่ แต่ใน implementation ปัจจุบันยังไม่มี route สำหรับ email verification, resend verification หรือ forgot password
-
-### 3. เตรียมฐานข้อมูล
+### 3. Prepare database
 
 ```bash
 pnpm prisma:generate
@@ -83,18 +73,18 @@ pnpm prisma:migrate
 pnpm --filter backend run prisma:seed
 ```
 
-### 4. รันโปรเจกต์ในโหมดพัฒนา
+### 4. Start development servers
 
 ```bash
 pnpm dev
 ```
 
-บริการที่จะรัน:
+URL ระหว่างพัฒนา:
 
 - Frontend: `http://localhost:3000`
 - Backend: `http://localhost:5000`
 
-## คำสั่งที่ใช้บ่อย
+## Common Commands
 
 ```bash
 pnpm dev
@@ -108,7 +98,7 @@ pnpm test:coverage
 
 ## API Overview
 
-Health:
+Health endpoints:
 
 - `GET /`
 - `GET /health`
@@ -122,32 +112,93 @@ Resource groups:
 - `/api/transactions`
 - `/api/users`
 
-รายละเอียดเพิ่มเติมดูที่:
+## Deployment
 
-- [`docs/backend.md`](docs/backend.md)
-- [`docs/frontend.md`](docs/frontend.md)
+### Recommended Architecture
+
+- Vercel: `frontend`
+- Render: `backend`
+- Render PostgreSQL: database
+
+ลำดับ deploy ที่แนะนำ:
+
+1. Deploy PostgreSQL และ `backend` บน Render ก่อน
+2. คัดลอก backend URL ไปตั้งเป็น `NEXT_PUBLIC_API_URL` ใน Vercel
+3. Deploy `frontend` บน Vercel
+4. คัดลอก frontend production URL จาก Vercel กลับไปตั้งเป็น `FRONTEND_URL` ใน Render
+5. ตรวจสอบว่า login, session, และ API เรียกข้ามโดเมนได้จริง
+
+### Deploy Frontend on Vercel
+
+ตั้งค่าโปรเจกต์ใน Vercel ดังนี้:
+
+- Framework Preset: `Next.js`
+- Root Directory: `frontend`
+- Package Manager: `pnpm`
+
+Environment Variables:
+
+- `NEXTAUTH_URL=https://<your-vercel-domain>`
+- `NEXTAUTH_SECRET=<random-secret>`
+- `NEXT_PUBLIC_API_URL=https://<your-render-backend-domain>`
+
+### Deploy Backend on Render
+
+ถ้าสร้าง service เองแบบ manual:
+
+- Service Type: `Web Service`
+- Root Directory: `backend`
+- Build Command: `corepack enable && pnpm install --frozen-lockfile && pnpm build`
+- Pre-Deploy Command: `pnpm exec prisma migrate deploy`
+- Start Command: `pnpm start`
+
+Environment Variables:
+
+- `NODE_ENV=production`
+- `DATABASE_URL=<render-postgres-connection-string>`
+- `FRONTEND_URL=https://<your-vercel-domain>`
+- `JWT_SECRET=<random-secret>`
+- `REFRESH_TOKEN_SECRET=<random-secret>`
+- `JWT_EXPIRES_IN=1h`
+- `REFRESH_TOKEN_EXPIRES_IN=7d`
+
+ถ้าต้องเปิด CORS ให้หลายโดเมน เช่น Vercel preview deployments:
+
+- `FRONTEND_URLS=https://preview-1.vercel.app,https://preview-2.vercel.app`
+
+### Deploy Both Services on Render
+
+repo นี้มี [`render.yaml`](render.yaml) สำหรับ deploy ทั้ง `frontend`, `backend`, และ PostgreSQL บน Render อยู่แล้ว
+
+วิธีใช้งาน:
+
+1. Push code ขึ้น Git provider
+2. ไปที่ Render แล้วเลือก Blueprint deploy
+3. ชี้มาที่ repository นี้
+4. Review ค่าใน `render.yaml`
+5. เปลี่ยน domain/env ตามของจริงก่อนกด deploy
+
+### Deployment Checklist
+
+- `NEXTAUTH_URL` เป็น production URL ของ frontend จริง
+- `NEXT_PUBLIC_API_URL` ชี้ไป backend จริง
+- `FRONTEND_URL` ฝั่ง backend ตรงกับ frontend domain จริง
+- `DATABASE_URL` เป็น production database
+- `prisma migrate deploy` ถูกรันก่อน backend start
+- `https://<backend-domain>/health` ตอบกลับได้
+
+## Documentation
+
+- [Frontend Docs](docs/frontend.md)
+- [Backend Docs](docs/backend.md)
+- [Deployment Overview](docs/deployment.md)
+- [Render Deployment Guide](docs/render-deployment.md)
 
 ## Known Gaps
 
-- `frontend/src/lib/api.ts` ยังมี helper `verifyEmail` และ `resendVerification` แต่ backend ไม่มี route เหล่านี้แล้ว
-- NextAuth runtime config ใน `frontend/src/app/api/auth/[...nextauth]/route.ts` ยังไม่ใช้ config ชุดเดียวกับ `options.ts` ทำให้ session fields อย่าง `accessToken` อาจไม่ถูกส่งต่อครบตามที่ API wrapper คาดหวัง
-- `/login` ยังลิงก์ไป `/forgot-password` แต่ยังไม่มี page หรือ backend flow สำหรับ reset password
-- `GET /api/ideas` รับ query `category` ในบางชั้นของระบบ แต่ route backend ยังไม่ได้ใช้ค่าดังกล่าวในการ filter จริง
-- `GET /api/transactions/summary/stats` ส่งค่า `streak: 0` เป็น placeholder
-- หน้า upgrade และ checkout เป็น UI prototype ยังไม่มีระบบ subscription หรือ payment backend จริง
-
-## Deployment
-
-ไฟล์ `render.yaml` มี base configuration สำหรับ frontend, backend และ PostgreSQL บน Render แล้ว แต่ก่อน deploy จริงควรตรวจค่าต่อไปนี้อีกครั้ง:
-
-- `NEXTAUTH_URL`
-- `NEXTAUTH_SECRET`
-- `NEXT_PUBLIC_API_URL`
-- `FRONTEND_URL`
-- `JWT_SECRET`
-- `REFRESH_TOKEN_SECRET`
-
-ให้แน่ใจว่า frontend ชี้ไป backend จริง และ backend อนุญาต CORS จาก frontend domain จริง
+- flow บางส่วนในหน้า upgrade/checkout ยังเป็น UI prototype
+- helper บางตัวใน frontend ยังอ้างถึง route ที่ backend ยังไม่ได้เปิดใช้จริง
+- ยังมี lint warnings บางจุดที่ไม่ block deployment
 
 ## License
 

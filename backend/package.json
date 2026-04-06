@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "SideSpark backend API with Express and Prisma",
   "main": "dist/index.js",
+  "packageManager": "pnpm@8.15.0",
+  "engines": {
+    "node": ">=18.18.0"
+  },
   "scripts": {
     "dev": "node scripts/prisma-generate.cjs && ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "node scripts/prisma-generate.cjs && tsc",

@@ -2,6 +2,9 @@
   "name": "sidespark",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": ">=18.18.0"
+  },
   "scripts": {
     "dev": "concurrently \"pnpm --filter frontend dev\" \"pnpm --filter backend dev\"",
     "build": "pnpm --filter frontend build && pnpm --filter backend build",

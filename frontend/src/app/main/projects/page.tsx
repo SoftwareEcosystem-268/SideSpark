@@ -1,11 +1,10 @@
-// app/main/projects/page.tsx
-import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
 import UserNavbar from "@/components/layout/UserNavbar"
 import ProjectsPage from "@/components/main/ProjectsPage"
+import { getServerAuthSession } from "@/lib/server-auth"
 
 export default async function ProjectsRoute() {
-  const session = await getServerSession()
+  const session = await getServerAuthSession()
   if (!session) redirect("/login")
 
   return (

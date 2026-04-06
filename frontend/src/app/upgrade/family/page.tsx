@@ -1,12 +1,11 @@
-// app/upgrade/family/page.tsx
-import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
 import UserNavbar from "@/components/layout/UserNavbar"
 import Footer from "@/components/layout/Footer"
 import CheckoutPage from "@/components/upgrade/CheckoutPage"
+import { getServerAuthSession } from "@/lib/server-auth"
 
 export default async function UpgradeFamilyRoute() {
-  const session = await getServerSession()
+  const session = await getServerAuthSession()
   if (!session) redirect("/login")
 
   return (

@@ -1,12 +1,11 @@
-// app/upgrade/page.tsx
-import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
 import UserNavbar from "@/components/layout/UserNavbar"
 import Footer from "@/components/layout/Footer"
 import UpgradePage from "@/components/upgrade/UpgradePage"
+import { getServerAuthSession } from "@/lib/server-auth"
 
 export default async function UpgradeRoute() {
-  const session = await getServerSession()
+  const session = await getServerAuthSession()
   if (!session) redirect("/login")
 
   // TODO: ดึง currentPlan จาก DB จริง
