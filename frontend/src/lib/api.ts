@@ -1,6 +1,7 @@
 import { getAuthSession } from '@/lib/auth-session'
+import { getApiBaseUrl } from '@/lib/runtime-config'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+const API_URL = getApiBaseUrl()
 
 type QueryValue = string | number | boolean | null | undefined
 type QueryParams = Record<string, QueryValue | QueryValue[]>
