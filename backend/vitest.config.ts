@@ -5,6 +5,8 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    fileParallelism: false,
+    setupFiles: ['./vitest.setup.ts'],
     include: [
       '../tests/backend/{unittest,integration,e2e}/**/*.test.ts',
       '../tests/backend/{unittest,integration,e2e}/**/*.spec.ts',

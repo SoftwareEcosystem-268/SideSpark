@@ -68,7 +68,7 @@ function RegisterPageView({ redirectUrl }: { redirectUrl: string }) {
         // ถ้า auto-login สำเร็จ ให้พุ่งไป URL ที่ตั้งใจไว้เลย!
         window.location.href = redirectUrl
       }
-    } catch (error) {
+    } catch {
       setErrors({ general: 'เกิดข้อผิดพลาด กรุณาลองใหม่' })
     } finally {
       setLoading(false)

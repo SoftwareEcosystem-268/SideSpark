@@ -1,24 +1,26 @@
-// components/main/ExploreIdeas.tsx
 "use client"
-import { useState, KeyboardEvent } from "react"
+
+import { useEffect, useRef, useState, type KeyboardEvent } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Plus, ChevronRight, CheckCircle2 } from "lucide-react"
+import { api, handleApiResponse } from "@/lib/api"
+import type { IdeaRecommendation, SearchableSkill, SkillSearchResponse, UserSkill } from "@/types"
+import { CheckCircle2, ChevronRight, Loader2, Search, X } from "lucide-react"
 
-// --- Types ---
-type Skill = { label: string; colorClass: string }
-type Idea = {
-  id: number
-  title: string
-  description: string
-  difficulty: "เริ่มต้นง่าย" | "ปานกลาง" | "ยาก"
-  income: string
-  tags: string[]
-  matchKeywords: string[]
+type SelectedSkill = {
+  id: string
+  label: string
+  colorClass: string
 }
 
-// --- Color palette for skill tags (cycles through) ---
+type SkillSearchResult = {
+  id: string
+  label: string
+  category: string
+  isSelected: boolean
+}
+
 const TAG_COLORS = [
   { bg: "bg-[#EEEDFE]", text: "text-[#3C3489]", border: "border-[#AFA9EC]" },
   { bg: "bg-[#E1F5EE]", text: "text-[#085041]", border: "border-[#5DCAA5]" },
@@ -27,127 +29,241 @@ const TAG_COLORS = [
   { bg: "bg-[#EAF3DE]", text: "text-[#27500A]", border: "border-[#97C459]" },
 ]
 
-// --- Mock Data ---
-const ALL_IDEAS: Idea[] = [
-  {
-    id: 1,
-    title: "รับทำพรีเซนต์ด้วย Canva",
-    description: "รับทำสไลด์งานกลุ่มหรือสัมมนาให้นักศึกษาและวัยทำงาน มี Template ให้เลือก",
-    difficulty: "เริ่มต้นง่าย",
-    income: "฿300 – ฿1,500",
-    tags: ["Canva", "การออกแบบ"],
-    matchKeywords: ["canva", "การออกแบบ", "design"],
+const DIFFICULTY_STYLE: Record<
+  IdeaRecommendation["difficulty"],
+  { label: string; className: string }
+> = {
+  easy: {
+    label: "เริ่มต้นง่าย",
+    className: "bg-[#EAF3DE] text-[#3B6D11]",
   },
-  {
-    id: 2,
-    title: "รับถ่ายรูปสินค้าลง Shopee/TikTok",
-    description: "รับถ่ายภาพสินค้าจัดเซตสวยๆ สำหรับร้านค้าออนไลน์ขนาดเล็ก ใช้กล้องมือถือก็เริ่มได้",
-    difficulty: "ปานกลาง",
-    income: "฿500 – ฿3,000",
-    tags: ["การถ่ายภาพ"],
-    matchKeywords: ["การถ่ายภาพ", "ถ่ายภาพ", "photography"],
+  medium: {
+    label: "ปานกลาง",
+    className: "bg-[#FAEEDA] text-[#854F0B]",
   },
-  {
-    id: 3,
-    title: "รับออกแบบโลโก้ SME",
-    description: "รับจ้างออกแบบโลโก้สำหรับร้านค้าเล็กและธุรกิจที่เพิ่งเริ่มต้น เน้นงานไวและสวยงาม",
-    difficulty: "ยาก",
-    income: "฿5,000 – ฿15,000",
-    tags: ["การออกแบบ"],
-    matchKeywords: ["การออกแบบ", "design", "illustrator", "canva"],
+  hard: {
+    label: "ยาก",
+    className: "bg-[#FCEBEB] text-[#A32D2D]",
   },
-  {
-    id: 4,
-    title: "สอนพิเศษออนไลน์",
-    description: "สอนวิชาที่ถนัดผ่าน Zoom หรือ Google Meet รับนักเรียน ม.ต้น ถึงมหาวิทยาลัย",
-    difficulty: "เริ่มต้นง่าย",
-    income: "฿200 – ฿600/ชม.",
-    tags: ["สอน", "ออนไลน์"],
-    matchKeywords: ["สอน", "teaching", "education"],
-  },
-  {
-    id: 5,
-    title: "ตัดต่อวิดีโอ Reels/Shorts",
-    description: "ตัดต่อคลิปสั้นสำหรับ Instagram Reels, TikTok และ YouTube Shorts ให้แบรนด์หรือ Content Creator",
-    difficulty: "ปานกลาง",
-    income: "฿800 – ฿4,000",
-    tags: ["ตัดต่อ", "วิดีโอ"],
-    matchKeywords: ["ตัดต่อ", "video", "premiere", "capcut"],
-  },
-  {
-    id: 6,
-    title: "เขียน Content โซเชียล",
-    description: "เขียนแคปชั่น โพสต์ Facebook/IG ให้ร้านค้าออนไลน์ SME และ Startup",
-    difficulty: "เริ่มต้นง่าย",
-    income: "฿300 – ฿2,000",
-    tags: ["เขียน", "Content"],
-    matchKeywords: ["เขียน", "copywriting", "content", "social media"],
-  },
-]
+}
 
-// --- Helpers ---
 let colorCursor = 0
 const assignedColors: Record<string, string> = {}
 
 function getTagColorClass(label: string): string {
   if (!assignedColors[label]) {
-    const c = TAG_COLORS[colorCursor % TAG_COLORS.length]
-    assignedColors[label] = `${c.bg} ${c.text} ${c.border}`
-    colorCursor++
+    const color = TAG_COLORS[colorCursor % TAG_COLORS.length]
+    assignedColors[label] = `${color.bg} ${color.text} ${color.border}`
+    colorCursor += 1
   }
+
   return assignedColors[label]
 }
 
-function matchScore(idea: Idea, skills: Skill[]): number {
-  const skillLabels = skills.map((s) => s.label.toLowerCase())
-  return idea.matchKeywords.filter((kw) =>
-    skillLabels.some((u) => u.includes(kw) || kw.includes(u))
-  ).length
+function formatCategoryLabel(category: string | null): string {
+  if (!category) return "Skill"
+
+  return category
+    .split("-")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ")
 }
 
-const DIFFICULTY_STYLE: Record<string, string> = {
-  "เริ่มต้นง่าย": "bg-[#EAF3DE] text-[#3B6D11]",
-  ปานกลาง: "bg-[#FAEEDA] text-[#854F0B]",
-  ยาก: "bg-[#FCEBEB] text-[#A32D2D]",
+function formatIncomeRange(idea: IdeaRecommendation): string {
+  const formatter = new Intl.NumberFormat("th-TH")
+  const min = formatter.format(idea.estimatedIncome.min)
+  const max = formatter.format(idea.estimatedIncome.max)
+
+  if (idea.estimatedIncome.unit === "THB") {
+    return `฿${min} - ฿${max}`
+  }
+
+  return `${min} - ${max} ${idea.estimatedIncome.unit}`
 }
 
-// --- Component ---
+function mapUserSkillToSelectedSkill(skill: Pick<UserSkill, "id" | "name">): SelectedSkill {
+  return {
+    id: skill.id,
+    label: skill.name,
+    colorClass: getTagColorClass(skill.name),
+  }
+}
+
+function mapSearchableSkill(skill: SearchableSkill): SkillSearchResult {
+  return {
+    id: skill.id,
+    label: skill.name,
+    category: formatCategoryLabel(skill.category),
+    isSelected: skill.isSelected,
+  }
+}
+
+function getIdeaTags(idea: IdeaRecommendation): string[] {
+  return idea.matchedSkills.length > 0 ? idea.matchedSkills : idea.skills
+}
+
+function getErrorMessage(error: unknown, fallbackMessage: string): string {
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message
+  }
+
+  return fallbackMessage
+}
+
 export default function ExploreIdeas() {
-  const [skills, setSkills] = useState<Skill[]>([
-    { label: "การออกแบบ", colorClass: getTagColorClass("การออกแบบ") },
-    { label: "Canva", colorClass: getTagColorClass("Canva") },
-    { label: "การถ่ายภาพ", colorClass: getTagColorClass("การถ่ายภาพ") },
-  ])
-  const [inputValue, setInputValue] = useState("")
+  const searchBoxRef = useRef<HTMLDivElement>(null)
+  const latestSkillRequestRef = useRef(0)
 
-  const addSkill = () => {
-    const val = inputValue.trim()
-    if (!val) return
-    if (skills.find((s) => s.label.toLowerCase() === val.toLowerCase())) {
+  const [skills, setSkills] = useState<SelectedSkill[]>([])
+  const [ideas, setIdeas] = useState<IdeaRecommendation[]>([])
+  const [searchResults, setSearchResults] = useState<SkillSearchResult[]>([])
+  const [inputValue, setInputValue] = useState("")
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [isInitialLoading, setIsInitialLoading] = useState(true)
+  const [isSkillsLoading, setIsSkillsLoading] = useState(false)
+  const [isIdeasLoading, setIsIdeasLoading] = useState(false)
+  const [isMutatingSkill, setIsMutatingSkill] = useState(false)
+  const [skillsError, setSkillsError] = useState<string | null>(null)
+  const [ideasError, setIdeasError] = useState<string | null>(null)
+
+  const normalizedQuery = inputValue.trim()
+  const selectableResults = searchResults.filter((skill) => !skill.isSelected)
+  const showSuggestions =
+    isSearchOpen && (searchResults.length > 0 || normalizedQuery.length > 0 || isSkillsLoading)
+
+  async function refreshSkills(query?: string) {
+    const requestId = latestSkillRequestRef.current + 1
+    latestSkillRequestRef.current = requestId
+    setIsSkillsLoading(true)
+
+    try {
+      const response = await api.skills.getAll(query ? { q: query } : undefined)
+      const data = await handleApiResponse<SkillSearchResponse>(response)
+
+      if (latestSkillRequestRef.current !== requestId) {
+        return
+      }
+
+      setSearchResults(data.skills.map(mapSearchableSkill))
+      setSkills(data.userSkills.map(mapUserSkillToSelectedSkill))
+      setSkillsError(null)
+    } catch (error) {
+      if (latestSkillRequestRef.current !== requestId) {
+        return
+      }
+
+      setSearchResults([])
+      setSkillsError(getErrorMessage(error, "โหลดทักษะไม่สำเร็จ"))
+    } finally {
+      if (latestSkillRequestRef.current === requestId) {
+        setIsSkillsLoading(false)
+      }
+    }
+  }
+
+  async function refreshIdeas() {
+    setIsIdeasLoading(true)
+
+    try {
+      const response = await api.ideas.getAll()
+      const data = await handleApiResponse<IdeaRecommendation[]>(response)
+
+      setIdeas(data)
+      setIdeasError(null)
+    } catch (error) {
+      setIdeas([])
+      setIdeasError(getErrorMessage(error, "โหลดไอเดียไม่สำเร็จ"))
+    } finally {
+      setIsIdeasLoading(false)
+    }
+  }
+
+  async function loadInitialData() {
+    setIsInitialLoading(true)
+
+    await Promise.all([refreshSkills(), refreshIdeas()])
+
+    setIsInitialLoading(false)
+  }
+
+  useEffect(() => {
+    void loadInitialData()
+  }, [])
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchBoxRef.current && !searchBoxRef.current.contains(event.target as Node)) {
+        setIsSearchOpen(false)
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
+
+  const handleSearchChange = (nextValue: string) => {
+    setInputValue(nextValue)
+    setIsSearchOpen(true)
+    void refreshSkills(nextValue.trim())
+  }
+
+  const handleAddSkill = async (skill: SkillSearchResult) => {
+    if (skill.isSelected || isMutatingSkill) {
       setInputValue("")
       return
     }
-    setSkills((prev) => [...prev, { label: val, colorClass: getTagColorClass(val) }])
-    setInputValue("")
+
+    setIsMutatingSkill(true)
+
+    try {
+      const response = await api.skills.add(skill.id)
+      await handleApiResponse(response)
+
+      setInputValue("")
+      setIsSearchOpen(false)
+
+      await Promise.all([refreshSkills(), refreshIdeas()])
+    } catch (error) {
+      setSkillsError(getErrorMessage(error, `เพิ่มทักษะ ${skill.label} ไม่สำเร็จ`))
+    } finally {
+      setIsMutatingSkill(false)
+    }
   }
 
-  const removeSkill = (label: string) => {
-    setSkills((prev) => prev.filter((s) => s.label !== label))
+  const handleRemoveSkill = async (skillId: string, skillLabel: string) => {
+    if (isMutatingSkill) return
+
+    setIsMutatingSkill(true)
+
+    try {
+      const response = await api.skills.remove(skillId)
+
+      if (!response.ok) {
+        await handleApiResponse(response)
+      }
+
+      await Promise.all([refreshSkills(normalizedQuery), refreshIdeas()])
+    } catch (error) {
+      setSkillsError(getErrorMessage(error, `ลบทักษะ ${skillLabel} ไม่สำเร็จ`))
+    } finally {
+      setIsMutatingSkill(false)
+    }
   }
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") addSkill()
-  }
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter" && selectableResults.length > 0) {
+      event.preventDefault()
+      void handleAddSkill(selectableResults[0])
+      return
+    }
 
-  const matched = ALL_IDEAS
-    .map((idea) => ({ ...idea, score: matchScore(idea, skills) }))
-    .filter((idea) => skills.length === 0 || idea.score > 0)
-    .sort((a, b) => b.score - a.score)
+    if (event.key === "Escape") {
+      setIsSearchOpen(false)
+    }
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-
-      {/* Hero */}
       <div className="text-center max-w-2xl mx-auto pt-4 pb-2">
         <h1 className="text-3xl font-bold text-[#0F172A] dark:text-white mb-3">
           สำรวจไอเดียสร้างรายได้ 💡
@@ -157,130 +273,230 @@ export default function ExploreIdeas() {
         </p>
       </div>
 
-      {/* Skill Management Card */}
       <Card className="border-gray-200 dark:border-gray-800 shadow-sm bg-white dark:bg-gray-900/80">
         <CardContent className="p-6 space-y-5">
-
-          {/* Add Skill Row */}
           <div className="space-y-2">
             <label className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">
-              เพิ่มทักษะใหม่
+              ค้นหาทักษะในระบบ
             </label>
-            <div className="flex gap-2">
+
+            <div ref={searchBoxRef} className="relative">
+              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <Input
-                placeholder="พิมพ์ทักษะ เช่น ตัดต่อวิดีโอ, Figma, ถ่ายภาพ..."
-                className="flex-1 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus-visible:ring-[#7F77DD] rounded-xl"
+                placeholder="ค้นหาทักษะ เช่น Canva, การถ่ายภาพ, ตัดต่อวิดีโอ..."
+                className="h-11 pl-10 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus-visible:ring-[#7F77DD] rounded-xl"
                 value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
+                onChange={(event) => handleSearchChange(event.target.value)}
+                onFocus={() => setIsSearchOpen(true)}
                 onKeyDown={handleKeyDown}
+                role="combobox"
+                aria-label="ค้นหาทักษะ"
+                aria-autocomplete="list"
+                aria-expanded={showSuggestions}
+                aria-controls="idea-skill-suggestions"
               />
-              <Button
-                onClick={addSkill}
-                className="bg-[#7F77DD] hover:bg-[#534AB7] text-white rounded-xl px-5 shrink-0 transition-colors"
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                เพิ่ม
-              </Button>
+
+              {showSuggestions && (
+                <div
+                  id="idea-skill-suggestions"
+                  className="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-xl shadow-black/5"
+                >
+                  <div className="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between gap-3">
+                    <span>
+                      {normalizedQuery
+                        ? `พบทักษะ ${searchResults.length} รายการ`
+                        : `ทักษะในระบบ ${searchResults.length} รายการ`}
+                    </span>
+                    {isSkillsLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                  </div>
+
+                  {isSkillsLoading ? (
+                    <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      กำลังค้นหาทักษะ...
+                    </div>
+                  ) : searchResults.length === 0 ? (
+                    <p className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                      ไม่พบทักษะในระบบ ลองค้นหาด้วยคำอื่น
+                    </p>
+                  ) : (
+                    <ul className="max-h-64 overflow-y-auto py-1">
+                      {searchResults.map((skill) => (
+                        <li key={skill.id}>
+                          <button
+                            type="button"
+                            onClick={() => void handleAddSkill(skill)}
+                            disabled={skill.isSelected || isMutatingSkill}
+                            className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left transition-colors disabled:cursor-not-allowed disabled:bg-gray-50/80 dark:disabled:bg-gray-800/60 hover:bg-gray-50 dark:hover:bg-gray-800"
+                          >
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-[#0F172A] dark:text-white">
+                                {skill.label}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                {skill.category}
+                              </p>
+                            </div>
+                            <span
+                              className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium ${
+                                skill.isSelected
+                                  ? "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+                                  : "bg-[#EEEDFE] text-[#534AB7]"
+                              }`}
+                            >
+                              {skill.isSelected ? "เลือกแล้ว" : "เลือก"}
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
             </div>
+
+            <p className="text-xs text-gray-400 dark:text-gray-500">
+              เลือกจากรายการทักษะที่มีอยู่แล้ว แล้วระบบจะใช้ทักษะเหล่านี้ไปจับคู่ไอเดียให้คุณ
+            </p>
+
+            {skillsError && (
+              <p className="text-sm text-red-500">{skillsError}</p>
+            )}
           </div>
 
-          {/* Active Skills */}
           <div className="space-y-2">
             <label className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">
               ทักษะของคุณ ({skills.length})
             </label>
+
             <div className="flex flex-wrap gap-2 min-h-[44px] p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800">
-              {skills.length === 0 ? (
+              {isInitialLoading ? (
+                <p className="text-sm text-gray-400 flex items-center gap-2 m-auto">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  กำลังโหลดทักษะของคุณ...
+                </p>
+              ) : skills.length === 0 ? (
                 <p className="text-sm text-gray-400 flex items-center m-auto">
-                  ยังไม่มีทักษะ — ลองเพิ่มได้เลย
+                  ยังไม่มีทักษะ ลองเลือกจากรายการด้านบนได้เลย
                 </p>
               ) : (
                 skills.map((skill) => (
                   <span
-                    key={skill.label}
+                    key={skill.id}
                     className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium transition-all ${skill.colorClass}`}
                   >
                     {skill.label}
                     <button
-                      onClick={() => removeSkill(skill.label)}
-                      className="ml-1 opacity-50 hover:opacity-100 transition-opacity leading-none"
+                      type="button"
+                      onClick={() => void handleRemoveSkill(skill.id, skill.label)}
+                      className="ml-1 opacity-60 hover:opacity-100 transition-opacity leading-none"
                       aria-label={`ลบ ${skill.label}`}
+                      disabled={isMutatingSkill}
                     >
-                      ×
+                      <X className="w-3.5 h-3.5" />
                     </button>
                   </span>
                 ))
               )}
             </div>
           </div>
-
         </CardContent>
       </Card>
 
-      {/* Results Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold flex items-center gap-2 text-[#0F172A] dark:text-white">
           <CheckCircle2 className="w-5 h-5 text-[#1D9E75]" />
           ไอเดียที่เหมาะกับคุณ
         </h2>
-        <span className="text-sm text-gray-500">พบ {matched.length} รายการ</span>
+        <span className="text-sm text-gray-500">
+          {isIdeasLoading && !isInitialLoading ? "กำลังอัปเดต..." : `พบ ${ideas.length} รายการ`}
+        </span>
       </div>
 
-      {/* Idea Cards Grid */}
-      {matched.length === 0 ? (
+      {ideasError ? (
+        <div className="text-center py-16 text-red-500">
+          <p className="text-base">{ideasError}</p>
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-4 rounded-xl"
+            onClick={() => void refreshIdeas()}
+          >
+            ลองใหม่
+          </Button>
+        </div>
+      ) : isInitialLoading ? (
+        <div className="flex items-center justify-center py-16 text-gray-400 gap-2">
+          <Loader2 className="w-5 h-5 animate-spin" />
+          กำลังโหลดไอเดียที่เหมาะกับคุณ...
+        </div>
+      ) : ideas.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <p className="text-base">ยังไม่มีไอเดียที่ตรงกับทักษะของคุณ</p>
-          <p className="text-sm mt-1">ลองเพิ่มทักษะใหม่ดูสิ!</p>
+          <p className="text-sm mt-1">ลองเลือกทักษะใหม่ดูสิ</p>
         </div>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {matched.map((idea) => (
-            <Card
-              key={idea.id}
-              className="flex flex-col border-gray-200 dark:border-gray-800 hover:border-[#7F77DD]/60 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group overflow-hidden rounded-2xl"
-            >
-              <CardHeader className="p-5 pb-3">
-                <div className="mb-3">
-                  <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${DIFFICULTY_STYLE[idea.difficulty]}`}>
-                    {idea.difficulty}
-                  </span>
-                </div>
-                <CardTitle className="text-base leading-snug group-hover:text-[#534AB7] dark:group-hover:text-[#AFA9EC] transition-colors">
-                  {idea.title}
-                </CardTitle>
-              </CardHeader>
+          {ideas.map((idea) => {
+            const difficulty = DIFFICULTY_STYLE[idea.difficulty]
 
-              <CardContent className="p-5 pt-0 flex-1 space-y-3">
-                <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-3 leading-relaxed">
-                  {idea.description}
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {idea.tags.map((tag) => (
+            return (
+              <Card
+                key={idea.id}
+                className="flex flex-col border-gray-200 dark:border-gray-800 hover:border-[#7F77DD]/60 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group overflow-hidden rounded-2xl"
+              >
+                <CardHeader className="p-5 pb-3">
+                  <div className="mb-3 flex items-center justify-between gap-3">
                     <span
-                      key={tag}
-                      className="text-[11px] bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-md"
+                      className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${difficulty.className}`}
                     >
-                      #{tag}
+                      {difficulty.label}
                     </span>
-                  ))}
-                </div>
-              </CardContent>
+                    <span className="text-[11px] font-medium text-[#534AB7]">
+                      แมตช์ {idea.matchCount} ทักษะ
+                    </span>
+                  </div>
+                  <CardTitle className="text-base leading-snug group-hover:text-[#534AB7] dark:group-hover:text-[#AFA9EC] transition-colors">
+                    {idea.title}
+                  </CardTitle>
+                </CardHeader>
 
-              <CardFooter className="p-5 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 flex items-center justify-between">
-                <div>
-                  <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">รายได้ประเมิน</p>
-                  <p className="text-sm font-bold text-[#534AB7] dark:text-[#AFA9EC]">{idea.income}</p>
-                </div>
-                <Button
-                  size="sm"
-                  className="bg-[#7F77DD] hover:bg-[#534AB7] text-white rounded-xl shadow-sm transition-all active:scale-95"
-                >
-                  รายละเอียด
-                  <ChevronRight className="w-4 h-4 ml-1" />
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
+                <CardContent className="p-5 pt-0 flex-1 space-y-3">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-3 leading-relaxed">
+                    {idea.description}
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {getIdeaTags(idea).map((tag) => (
+                      <span
+                        key={`${idea.id}-${tag}`}
+                        className="text-[11px] bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-md"
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                </CardContent>
+
+                <CardFooter className="p-5 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">
+                      รายได้ประเมิน
+                    </p>
+                    <p className="text-sm font-bold text-[#534AB7] dark:text-[#AFA9EC]">
+                      {formatIncomeRange(idea)}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="bg-[#7F77DD] hover:bg-[#534AB7] text-white rounded-xl shadow-sm transition-all active:scale-95"
+                  >
+                    รายละเอียด
+                    <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </CardFooter>
+              </Card>
+            )
+          })}
         </div>
       )}
     </div>

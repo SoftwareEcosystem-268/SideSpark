@@ -272,8 +272,8 @@ describe('API endpoint wrappers', () => {
     },
     {
       name: 'skills.getAll',
-      call: () => api.skills.getAll({ category: 'design' }),
-      expectedUrl: '/api/skills?category=design',
+      call: () => api.skills.getAll({ category: 'design', q: 'figma' }),
+      expectedUrl: '/api/skills?category=design&q=figma',
     },
     {
       name: 'skills.getById',
@@ -312,10 +312,10 @@ describe('API endpoint wrappers', () => {
     {
       name: 'ideas.getAll',
       call: () => api.ideas.getAll({
-        category: 'marketing',
+        skills: ['design', 'photo'],
         difficulty: 'medium',
       }),
-      expectedUrl: '/api/ideas?category=marketing&difficulty=medium',
+      expectedUrl: '/api/ideas?skills=design&skills=photo&difficulty=medium',
     },
     {
       name: 'ideas.getById',

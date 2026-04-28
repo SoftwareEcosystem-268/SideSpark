@@ -53,7 +53,10 @@ export default function UserNavbar({ user }: Props) {
     : "U"
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-gray-200/50 dark:border-gray-800/50 bg-[#F8FAFC]/80 dark:bg-[#1E293B]/80 backdrop-blur-md">
+    <nav
+      data-user-navbar
+      className="sticky top-0 z-50 border-b border-gray-200/50 dark:border-gray-800/50 bg-[#F8FAFC]/80 dark:bg-[#1E293B]/80 backdrop-blur-md"
+    >
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
 
         {/* Left: Logo */}

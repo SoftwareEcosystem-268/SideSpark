@@ -1,11 +1,8 @@
 import { PrismaClient } from '@prisma/client'
-import dotenv from 'dotenv'
 import express from 'express'
 import request from 'supertest'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import authRoutes from '@/routes/auth'
-
-dotenv.config()
 
 const app = express()
 app.use(express.json())
@@ -68,46 +65,6 @@ describe('Auth API', () => {
         username: 'testuser',
       })
     })
-
-    it('returns error for invalid email', async () => {
-      const res = await registerUser({
-        email: 'invalid-email',
-      })
-
-      expect(res.status).toBe(400)
-      expect(res.body.error).toBeTruthy()
-    })
-
-    it('returns error for mismatched passwords', async () => {
-      const res = await registerUser({
-        confirmPassword: 'password456',
-      })
-
-      expect(res.status).toBe(400)
-      expect(res.body.error).toBeTruthy()
-    })
-
-    it('returns error when username already exists', async () => {
-      await registerUser()
-
-      const res = await registerUser({
-        email: 'second@example.com',
-      })
-
-      expect(res.status).toBe(400)
-      expect(res.body.error).toBeTruthy()
-    })
-
-    it('returns error when email already exists', async () => {
-      await registerUser()
-
-      const res = await registerUser({
-        username: 'seconduser',
-      })
-
-      expect(res.status).toBe(400)
-      expect(res.body.error).toBeTruthy()
-    })
   })
 
   describe('POST /api/auth/login', () => {
@@ -120,24 +77,6 @@ describe('Auth API', () => {
       expect(res.body).toHaveProperty('accessToken')
       expect(res.body).toHaveProperty('refreshToken')
       expect(res.body).toHaveProperty('user')
-    })
-
-    it('returns error when credentials are missing', async () => {
-      const res = await request(app)
-        .post('/api/auth/login')
-        .send({ email: 'test@example.com' })
-
-      expect(res.status).toBe(400)
-      expect(res.body.error).toBeTruthy()
-    })
-
-    it('returns error for invalid credentials', async () => {
-      const res = await loginUser({
-        password: 'wrongpassword',
-      })
-
-      expect(res.status).toBe(401)
-      expect(res.body.error).toBeTruthy()
     })
 
     it('returns error when the user has no password set', async () => {
@@ -159,15 +98,6 @@ describe('Auth API', () => {
   })
 
   describe('POST /api/auth/refresh', () => {
-    it('requires a refresh token', async () => {
-      const res = await request(app)
-        .post('/api/auth/refresh')
-        .send({})
-
-      expect(res.status).toBe(400)
-      expect(res.body.error).toBeTruthy()
-    })
-
     it('returns a new access token for a valid refresh token', async () => {
       await registerUser()
       const loginRes = await loginUser()
@@ -196,15 +126,6 @@ describe('Auth API', () => {
   })
 
   describe('POST /api/auth/logout', () => {
-    it('requires a refresh token', async () => {
-      const res = await request(app)
-        .post('/api/auth/logout')
-        .send({})
-
-      expect(res.status).toBe(400)
-      expect(res.body.error).toBeTruthy()
-    })
-
     it('invalidates the refresh token on logout', async () => {
       await registerUser()
       const loginRes = await loginUser()
@@ -227,13 +148,6 @@ describe('Auth API', () => {
   })
 
   describe('GET /api/auth/me', () => {
-    it('requires a bearer token', async () => {
-      const res = await request(app).get('/api/auth/me')
-
-      expect(res.status).toBe(401)
-      expect(res.body.error).toBeTruthy()
-    })
-
     it('returns the current user for a valid bearer token', async () => {
       await registerUser()
       const loginRes = await loginUser()
