@@ -57,150 +57,141 @@
 
 ## Tech Stack
 
-- **Frontend:** Next.js 14 + shadcn/ui + Tailwind CSS
-- **Backend:** Express.js + TypeScript
-- **Database:** PostgreSQL + Prisma ORM
-- **Deployment:** Render
+- Frontend: Next.js 14, React 18, Tailwind CSS, shadcn/ui, NextAuth v4
+- Backend: Express.js, TypeScript, Prisma ORM, PostgreSQL, JWT
+- Tooling: pnpm workspace, Vitest, concurrently
+- Deployment: Render (`render.yaml`)
 
-## Project Structure
+## โครงสร้างโปรเจกต์
 
-```
+```text
 SideSpark/
-├── frontend/           # Next.js + shadcn/ui
-│   ├── src/
-│   │   ├── app/        # Next.js App Router
-│   │   ├── components/ # React components
-│   │   └── lib/        # Utilities
-│   ├── package.json
-│   └── ...
-├── backend/            # Express + Prisma
-│   ├── src/
-│   │   ├── routes/     # API routes
-│   │   └── lib/        # Prisma client
-│   ├── prisma/
-│   │   └── schema.prisma
-│   ├── package.json
-│   └── ...
-├── package.json        # Root workspace
-├── pnpm-workspace.yaml
-└── render.yaml         # Render deployment config
+|-- backend/               # Express API + Prisma schema + seed
+|-- frontend/              # Next.js App Router frontend
+|-- docs/                  # เอกสารแยกตาม frontend/backend
+|-- tests/                 # Vitest suites แยก frontend/backend
+|-- package.json           # Root workspace scripts
+|-- pnpm-workspace.yaml
+|-- render.yaml            # Base deployment config สำหรับ Render
+`-- vitest.config.ts       # Root Vitest projects config
 ```
 
-## Getting Started
+## เริ่มต้นใช้งาน
 
 ### Prerequisites
 
 - Node.js 18+
-- pnpm
-- PostgreSQL database (local or cloud)
+- pnpm 8+
+- PostgreSQL
 
-### Installation
+### 1. ติดตั้ง dependencies
 
-1. **Install dependencies:**
 ```bash
 pnpm install
 ```
 
-2. **Set up environment variables:**
+### 2. ตั้งค่า environment variables
 
-   Backend ([`backend/.env`](backend/.env)):
-   ```bash
-   DATABASE_URL="postgresql://user:password@localhost:5432/sidespark?schema=public"
-   PORT=5000
-   NODE_ENV=development
-   FRONTEND_URL=http://localhost:3000
-   JWT_SECRET=your-secret-key
-   ```
+สร้างไฟล์ต่อไปนี้จาก example ที่มีอยู่ใน repo:
 
-3. **Initialize database:**
+- `backend/.env` จาก `backend/.env.example`
+- `frontend/.env.local` จาก `frontend/.env.local.example`
+
+ค่าที่ควรตั้งอย่างน้อยมีดังนี้
+
+Backend:
+
+- `DATABASE_URL`
+- `PORT`
+- `NODE_ENV`
+- `FRONTEND_URL`
+- `JWT_SECRET`
+- `REFRESH_TOKEN_SECRET`
+- `REFRESH_TOKEN_EXPIRES_IN`
+
+Frontend:
+
+- `NEXTAUTH_URL`
+- `NEXTAUTH_SECRET`
+- `NEXT_PUBLIC_API_URL`
+
+หมายเหตุ:
+
+- `backend/.env.example` ยังมีตัวแปรเกี่ยวกับ email และ `JWT_EXPIRES_IN` อยู่ แต่ใน implementation ปัจจุบันยังไม่มี route สำหรับ email verification, resend verification หรือ forgot password
+
+### 3. เตรียมฐานข้อมูล
+
 ```bash
-# Generate Prisma client
 pnpm prisma:generate
-
-# Run migrations
 pnpm prisma:migrate
-
-# (Optional) Seed database with initial data
-cd backend && pnpm prisma:seed
+pnpm --filter backend run prisma:seed
 ```
 
-4. **Run development servers:**
+### 4. รันโปรเจกต์ในโหมดพัฒนา
+
 ```bash
-# Run both frontend and backend
 pnpm dev
-
-# Or run separately:
-cd frontend && pnpm dev      # Frontend on http://localhost:3000
-cd backend && pnpm dev       # Backend on http://localhost:5000
 ```
 
-## API Endpoints
+บริการที่จะรัน:
 
-### Health
-- `GET /health` - Health check
-- `GET /` - API info
+- Frontend: `http://localhost:3000`
+- Backend: `http://localhost:5000`
 
-### Skills
-- `GET /api/skills` - Get all skills
-- `GET /api/skills/:id` - Get skill by ID
+## คำสั่งที่ใช้บ่อย
 
-### Ideas
-- `GET /api/ideas` - Get side hustle ideas (filter by skills)
-- `GET /api/ideas/:id` - Get idea by ID with steps
+```bash
+pnpm dev
+pnpm build
+pnpm start
+pnpm test
+pnpm test:frontend
+pnpm test:backend
+pnpm test:coverage
+```
 
-### Projects
-- `GET /api/projects` - Get all projects
-- `GET /api/projects/:id` - Get project by ID
-- `POST /api/projects` - Create new project
-- `PUT /api/projects/:id` - Update project
-- `DELETE /api/projects/:id` - Delete project
+## API Overview
 
-### Transactions
-- `GET /api/transactions` - Get all transactions
-- `GET /api/transactions/:id` - Get transaction by ID
-- `POST /api/transactions` - Create new transaction
-- `GET /api/transactions/summary/stats` - Get summary statistics
+Health:
 
-### Users
-- `GET /api/users/:id` - Get user profile
-- `PUT /api/users/:id` - Update user profile
-- `POST /api/users/:id/skills` - Add skill to user
-- `DELETE /api/users/:id/skills/:skillId` - Remove skill from user
+- `GET /`
+- `GET /health`
 
-## Deployment to Render
+Resource groups:
 
-1. **Push your code to GitHub**
+- `/api/auth`
+- `/api/skills`
+- `/api/ideas`
+- `/api/projects`
+- `/api/transactions`
+- `/api/users`
 
-2. **Create a Render account:** https://render.com
+รายละเอียดเพิ่มเติมดูที่:
 
-3. **Create services:**
-   - Create a new "Web Service" for frontend
-   - Create a new "Web Service" for backend
-   - Create a new "PostgreSQL" database
+- [`docs/backend.md`](docs/backend.md)
+- [`docs/frontend.md`](docs/frontend.md)
 
-4. **Configure environment variables in Render:**
-   - Set `DATABASE_URL` from the database connection
-   - Set other required env vars from `.env.example`
+## Known Gaps
 
-5. **Deploy:** Render will automatically deploy when you push to GitHub
+- `frontend/src/lib/api.ts` ยังมี helper `verifyEmail` และ `resendVerification` แต่ backend ไม่มี route เหล่านี้แล้ว
+- NextAuth runtime config ใน `frontend/src/app/api/auth/[...nextauth]/route.ts` ยังไม่ใช้ config ชุดเดียวกับ `options.ts` ทำให้ session fields อย่าง `accessToken` อาจไม่ถูกส่งต่อครบตามที่ API wrapper คาดหวัง
+- `/login` ยังลิงก์ไป `/forgot-password` แต่ยังไม่มี page หรือ backend flow สำหรับ reset password
+- `GET /api/ideas` รับ query `category` ในบางชั้นของระบบ แต่ route backend ยังไม่ได้ใช้ค่าดังกล่าวในการ filter จริง
+- `GET /api/transactions/summary/stats` ส่งค่า `streak: 0` เป็น placeholder
+- หน้า upgrade และ checkout เป็น UI prototype ยังไม่มีระบบ subscription หรือ payment backend จริง
 
-## Development
+## Deployment
 
-### Adding new API endpoints:
+ไฟล์ `render.yaml` มี base configuration สำหรับ frontend, backend และ PostgreSQL บน Render แล้ว แต่ก่อน deploy จริงควรตรวจค่าต่อไปนี้อีกครั้ง:
 
-1. Create route file in [`backend/src/routes/`](backend/src/routes/)
-2. Register in [`backend/src/routes/index.ts`](backend/src/routes/index.ts)
+- `NEXTAUTH_URL`
+- `NEXTAUTH_SECRET`
+- `NEXT_PUBLIC_API_URL`
+- `FRONTEND_URL`
+- `JWT_SECRET`
+- `REFRESH_TOKEN_SECRET`
 
-### Adding new Prisma models:
-
-1. Update [`backend/prisma/schema.prisma`](backend/prisma/schema.prisma)
-2. Run migration: `pnpm prisma:migrate`
-3. Regenerate client: `pnpm prisma:generate`
-
-### Frontend development:
-
-- Pages: Add to [`frontend/src/app/`](frontend/src/app/)
-- Components: Add to [`frontend/src/components/`](frontend/src/components/)
+ให้แน่ใจว่า frontend ชี้ไป backend จริง และ backend อนุญาต CORS จาก frontend domain จริง
 
 ## License
 

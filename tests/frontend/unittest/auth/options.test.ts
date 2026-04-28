@@ -9,7 +9,7 @@
 import { describe, it, expect } from 'vitest'
 import type { Session, User } from 'next-auth'
 import type { JWT } from 'next-auth/jwt'
-import { authOptions } from '../options'
+import { authOptions } from '@/app/api/auth/[...nextauth]/options'
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
