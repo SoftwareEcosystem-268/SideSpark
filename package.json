@@ -7,9 +7,9 @@
     "build": "pnpm --filter frontend build && pnpm --filter backend build",
     "start": "concurrently \"pnpm --filter frontend start\" \"pnpm --filter backend start\"",
     "lint": "pnpm --filter frontend lint && pnpm --filter backend lint",
-    "prisma:generate": "pnpm --filter backend prisma generate",
-    "prisma:migrate": "pnpm --filter backend prisma migrate dev",
-    "prisma:studio": "pnpm --filter backend prisma studio"
+    "prisma:generate": "pnpm --filter backend run prisma:generate",
+    "prisma:migrate": "pnpm --filter backend run prisma:migrate",
+    "prisma:studio": "pnpm --filter backend run prisma:studio"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.1",

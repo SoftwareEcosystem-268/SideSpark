@@ -3,6 +3,7 @@ import { prisma } from '../lib/prisma'
 import { optionalAuthMiddleware } from '../middleware/auth'
 
 const router = express.Router()
+type IdeaParams = { id: string }
 
 // GET /api/ideas - Get side hustle ideas (public endpoint)
 router.get('/', optionalAuthMiddleware, async (req: Request, res: Response) => {
@@ -52,7 +53,7 @@ router.get('/', optionalAuthMiddleware, async (req: Request, res: Response) => {
 })
 
 // GET /api/ideas/:id - Get idea by ID with steps
-router.get('/:id', async (req: Request, res: Response) => {
+router.get('/:id', async (req: Request<IdeaParams>, res: Response) => {
   try {
     const { id } = req.params
 

@@ -100,12 +100,6 @@ describe('Auth API', () => {
           confirmPassword: 'password123',
         })
 
-      // Auto-verify email for testing
-      await prisma.user.updateMany({
-        where: { email: 'test@example.com' },
-        data: { emailVerified: new Date() }
-      })
-
       // Login
       const res = await request(app)
         .post('/api/auth/login')
