@@ -30,7 +30,7 @@ services:
           name: sidespark-db
           property: connectionString
       - key: FRONTEND_URL
-        value: https://codefasting.com
+        value: https://codefasting.com,https://www.codefasting.com,https://sidespark.onrender.com
       - key: FRONTEND_URLS
         value: https://www.codefasting.com,https://sidespark-frontend.onrender.com
       - key: JWT_SECRET
