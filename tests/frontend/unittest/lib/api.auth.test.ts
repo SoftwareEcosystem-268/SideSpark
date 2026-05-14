@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
+import '@testing-library/jest-dom'
 
 const { mockGetAuthSession } = vi.hoisted(() => ({
   mockGetAuthSession: vi.fn(),

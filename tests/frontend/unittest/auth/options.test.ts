@@ -11,6 +11,36 @@ import type { Session, User } from 'next-auth'
 import type { JWT } from 'next-auth/jwt'
 import { authOptions } from '@/app/api/auth/[...nextauth]/options'
 
+// ─── Custom Types ───────────────────────────────────────────────────────────
+
+type CustomJWT = JWT & {
+  id?: string
+  email?: string
+  name?: string
+  username?: string
+  accessToken?: string
+  refreshToken?: string
+}
+
+type CustomUser = User & {
+  id: string
+  email: string
+  name: string
+  username: string
+  accessToken?: string
+  refreshToken?: string
+}
+
+type CustomSession = Session & {
+  accessToken?: string
+  user: {
+    id: string
+    email: string
+    name: string
+    username: string
+  }
+}
+
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
 /** Call the jwt callback directly */
@@ -32,7 +62,7 @@ const { jwt: jwtCb, session: sessionCb } = authOptions.callbacks as {
   session: SessionCallback
 }
 
-function createToken(overrides: Partial<JWT> = {}): JWT {
+function createToken(overrides: Partial<CustomJWT> = {}): CustomJWT {
   return {
     id: 'user-1',
     email: 'test@example.com',
@@ -42,7 +72,7 @@ function createToken(overrides: Partial<JWT> = {}): JWT {
   }
 }
 
-function createUser(overrides: Partial<User> = {}): User {
+function createUser(overrides: Partial<CustomUser> = {}): CustomUser {
   return {
     id: 'user-1',
     email: 'test@example.com',
@@ -52,7 +82,7 @@ function createUser(overrides: Partial<User> = {}): User {
   }
 }
 
-function createSession(overrides: Partial<Session> = {}): Session {
+function createSession(overrides: Partial<CustomSession> = {}): CustomSession {
   return {
     user: {
       id: 'user-1',
@@ -106,10 +136,11 @@ describe('NextAuth session callback', () => {
     const result = await callSessionCallback({
       session,
       token,
-    } as Parameters<typeof sessionCb>[0])
+      user: {} as any,
+    } as unknown as Parameters<typeof sessionCb>[0])
 
     // Assert – accessToken must be forwarded to session
-    expect((result as Session).accessToken).toBe('jwt-access-token')
+    expect((result as CustomSession).accessToken).toBe('jwt-access-token')
   })
 
   it('copies user fields from JWT token to session.user', async () => {
@@ -121,7 +152,8 @@ describe('NextAuth session callback', () => {
     const result = (await callSessionCallback({
       session,
       token,
-    } as Parameters<typeof sessionCb>[0])) as Session
+      user: {} as any,
+    } as unknown as Parameters<typeof sessionCb>[0])) as CustomSession
 
     expect(result.user.id).toBe('user-1')
     expect(result.user.email).toBe('test@example.com')
@@ -135,7 +167,8 @@ describe('NextAuth session callback', () => {
     const result = await callSessionCallback({
       session,
       token: null as unknown as JWT,
-    } as Parameters<typeof sessionCb>[0])
+      user: {} as any,
+    } as unknown as Parameters<typeof sessionCb>[0])
 
     // Should not throw; session returned as-is
     expect(result).toBeDefined()

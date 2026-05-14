@@ -1,5 +1,6 @@
 /** @jsxImportSource @/test-utils */
 import { fireEvent, render, screen, waitFor } from "@testing-library/react"
+import '@testing-library/jest-dom'
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import ExploreIdeas from "@/components/main/ExploreIdeas"

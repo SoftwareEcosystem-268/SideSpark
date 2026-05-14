@@ -1,0 +1,12 @@
+{
+  "extends": "../frontend/tsconfig.json",
+  "compilerOptions": {
+    "ignoreDeprecations": "6.0",
+    "baseUrl": "..",
+    "paths": {
+      "@/*": ["frontend/src/*"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules"]
+}
